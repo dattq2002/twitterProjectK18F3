@@ -22,6 +22,9 @@ class UsersService {
       options: { expiresIn: process.env.REFESH_TOKEN_EXPIRE_IN }
     })
   }
+  private signAccessTokenAndRefreshToken(user_id: string) {
+    return Promise.all([this.signAccessToken(user_id), this.signRefreshToken(user_id)])
+  }
   async checkEmailExists(email: string) {
     const user = await databaseService.users.findOne({ email })
     return Boolean(user)
@@ -37,10 +40,11 @@ class UsersService {
 
     //lay user_id từ user vừa tạo
     const user_id = result.insertedId.toString()
-    const [access_token, refesh_token] = await Promise.all([
-      this.signAccessToken(user_id),
-      this.signRefreshToken(user_id)
-    ])
+    const [access_token, refesh_token] = await this.signAccessTokenAndRefreshToken(user_id)
+    return { access_token, refesh_token }
+  }
+  async login(user_id: string) {
+    const [access_token, refesh_token] = await this.signAccessTokenAndRefreshToken(user_id)
     return { access_token, refesh_token }
   }
 }
