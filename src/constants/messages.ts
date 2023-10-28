@@ -28,5 +28,12 @@ export const USERS_MESSAGES = {
   //login
   LOGIN_SUCCESS: 'Login successfully',
   //register
-  REGISTER_SUCCESS: 'Register successfully'
+  REGISTER_SUCCESS: 'Register successfully',
+  //accessToken
+  ACCESS_TOKEN_IS_REQUIRED: 'Access token is required',
+  //refreshToken
+  REFRESH_TOKEN_IS_REQUIRED: 'Refresh token is required',
+  USED_REFRESH_TOKEN_OR_NOT_EXIST: 'Refresh token is invalid or does not exist',
+  //logout
+  LOGOUT_SUCCESS: 'Logout successfully'
 } as const //để k ai chỉnh đc

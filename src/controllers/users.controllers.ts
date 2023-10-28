@@ -26,3 +26,11 @@ export const registerController = async (req: Request<ParamsDictionary, any, Reg
     result
   })
 }
+
+export const logoutController = async (req: Request, res: Response) => {
+  //lấy refresh token từ req.body
+  const { refresh_token } = req.body
+  //và vào db xoá cái refresh token đó đi
+  const result = await usersService.logout(refresh_token)
+  res.json(result)
+}
