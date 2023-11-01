@@ -15,14 +15,16 @@ class UsersService {
   private signAccessToken(user_id: string) {
     return signToken({
       payload: { user_id, type: TokenType.AccessToken },
-      options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN }
+      options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN },
+      privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string
     })
   }
   //viết hàm nhận vào user_id để bỏ vào payload tạo refesh token
   private signRefreshToken(user_id: string) {
     return signToken({
       payload: { user_id, type: TokenType.RefeshToken },
-      options: { expiresIn: process.env.REFESH_TOKEN_EXPIRE_IN }
+      options: { expiresIn: process.env.REFESH_TOKEN_EXPIRE_IN },
+      privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
     })
   }
   private signAccessTokenAndRefreshToken(user_id: string) {

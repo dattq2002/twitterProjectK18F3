@@ -4,10 +4,10 @@
 //tạo ra 1 req và bỏ vào trong đó email và password
 // nhét email và password vào trong body của req
 
-import { Request, Response, NextFunction } from 'express'
+import { Request } from 'express'
 import { checkSchema } from 'express-validator'
 import { JsonWebTokenError } from 'jsonwebtoken'
-import { capitalize, has } from 'lodash'
+import { capitalize } from 'lodash'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
@@ -209,7 +209,10 @@ export const accessTokenValidator = validate(
             //nếu xuống dc đây thì có nghĩa là có access token
             //cần verify access token và lấy payload() ra lưu lại trong req
             try {
-              const decoded_authorization = await verifyToken({ token: accessToken })
+              const decoded_authorization = await verifyToken({
+                token: accessToken,
+                secretOrPublicKey: process.env.JWT_SECRET_ACCESS_TOKEN as string
+              })
               //; quan trọng
               ;(req as Request).decoded_authorization = decoded_authorization
             } catch (error) {
@@ -238,7 +241,7 @@ export const refreshTokenValidator = validate(
           options: async (value, { req }) => {
             try {
               const [decoded_refresh_token, refresh_token] = await Promise.all([
-                verifyToken({ token: value }),
+                verifyToken({ token: value, secretOrPublicKey: process.env.JWT_SECRET_REFRESH_TOKEN as string }),
                 databaseService.refreshTokens.findOne({
                   token: value
                 })
