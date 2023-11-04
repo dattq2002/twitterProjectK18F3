@@ -10,6 +10,7 @@ import {
   LoginReqBody,
   LogoutReqBody,
   RegisterReqBody,
+  ResetPasswordReqBody,
   TokenPayload,
   VerifyEmailReqBody,
   VerifyForgotPasswordReqBody
@@ -116,5 +117,31 @@ export const verifyForgotPasswordTokenController = async (
   //ta chỉ cần thông báo rằng token hợp lệ
   return res.json({
     message: USERS_MESSAGES.VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS
+  })
+}
+
+export const resetPasswordController = async (
+  req: Request<ParamsDictionary, any, ResetPasswordReqBody>,
+  res: Response
+) => {
+  //muốn cập nhật mật khẩu mới thì cần user_id, và password mới
+  const { user_id } = req.decoded_forgot_password_token as TokenPayload
+  const { password } = req.body
+  //cập nhật password mới cho user có user_id này
+  const result = await usersService.resetPassword({
+    user_id,
+    password
+  })
+  return res.json(result)
+}
+
+export const getMeController = async (req: Request, res: Response) => {
+  //lấy thông tin user từ req.user
+  const { user_id } = req.decoded_authorization as TokenPayload
+  //trả về thông tin user
+  const user = await usersService.getMe(user_id)
+  return res.json({
+    message: USERS_MESSAGES.GET_ME_SUCCESS,
+    result: user
   })
 }
