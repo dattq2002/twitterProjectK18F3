@@ -6,13 +6,17 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import {
+  ChangePasswordReqBody,
+  FollowReqBody,
   ForgotPasswordReqBody,
   GetProfileReqParams,
   LoginReqBody,
   LogoutReqBody,
+  RefreshTokenReqBody,
   RegisterReqBody,
   ResetPasswordReqBody,
   TokenPayload,
+  UnfollowReqParams,
   UpdateMeReqBody,
   VerifyEmailReqBody,
   VerifyForgotPasswordReqBody
@@ -174,4 +178,45 @@ export const getProfileController = async (req: Request<GetProfileReqParams>, re
     message: USERS_MESSAGES.GET_PROFILE_SUCCESS,
     result: user
   })
+}
+export const followController = async (req: Request<ParamsDictionary, any, FollowReqBody>, res: Response) => {
+  const { user_id } = req.decoded_authorization as TokenPayload //lấy user_id từ decoded_authorization của access_token
+  const { followed_user_id } = req.body //lấy followed_user_id từ req.body
+  const result = await usersService.follow(user_id, followed_user_id) //chưa có method này
+  return res.json(result)
+}
+export const unfollowController = async (req: Request<UnfollowReqParams>, res: Response) => {
+  const { user_id } = req.decoded_authorization as TokenPayload //lấy user_id từ decoded_authorization của access_token
+  const { user_id: followed_user_id } = req.params //lấy user_id từ req.params là user_id của người mà ngta muốn unfollow
+  const result = await usersService.unfollow(user_id, followed_user_id) //unfollow chưa làm
+  return res.json(result)
+}
+export const changePasswordController = async (
+  req: Request<ParamsDictionary, any, ChangePasswordReqBody>,
+  res: Response
+) => {
+  const { user_id } = req.decoded_authorization as TokenPayload //lấy user_id từ decoded_authorization của access_token
+  const { password } = req.body //lấy old_password, password từ req.body
+  const result = await usersService.changePassword(user_id, password) //chưa có method này
+  return res.json(result)
+}
+export const refreshController = async (req: Request<ParamsDictionary, any, RefreshTokenReqBody>, res: Response) => {
+  const { refresh_token } = req.body //lấy refresh_token từ req.body
+  const { user_id, verify } = req.decoded_refresh_token as TokenPayload //lấy user_id từ decoded_refresh_token của refresh_token
+  const result = await usersService.refreshToken({
+    user_id,
+    refresh_token,
+    verify
+  }) //chưa có method này
+  return res.json({
+    message: USERS_MESSAGES.REFRESH_TOKEN_SUCCESS,
+    result
+  })
+}
+
+export const oAuthController = async (req: Request, res: Response) => {
+  const { code } = req.query
+  const { access_token, refesh_token, new_user } = await usersService.oAuth(code as string)
+  const urlRedirect = `${process.env.CLIENT_REDIRECT_CALLBACK}?access_token=${access_token}&refesh_token=${refesh_token}&new_user=${new_user}`
+  return res.redirect(urlRedirect)
 }
