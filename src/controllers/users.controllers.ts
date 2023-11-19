@@ -202,11 +202,12 @@ export const changePasswordController = async (
 }
 export const refreshController = async (req: Request<ParamsDictionary, any, RefreshTokenReqBody>, res: Response) => {
   const { refresh_token } = req.body //lấy refresh_token từ req.body
-  const { user_id, verify } = req.decoded_refresh_token as TokenPayload //lấy user_id từ decoded_refresh_token của refresh_token
+  const { user_id, verify, exp } = req.decoded_refresh_token as TokenPayload //lấy user_id từ decoded_refresh_token của refresh_token
   const result = await usersService.refreshToken({
     user_id,
     refresh_token,
-    verify
+    verify,
+    exp
   }) //chưa có method này
   return res.json({
     message: USERS_MESSAGES.REFRESH_TOKEN_SUCCESS,

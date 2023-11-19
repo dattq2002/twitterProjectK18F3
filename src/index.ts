@@ -6,13 +6,17 @@ import mediasRouter from './routes/medias.routes'
 import { initFolder } from './utils/file'
 import { config } from 'dotenv'
 import staticRouter from './routes/static.routes'
+import { UPLOAD_VIDEO_DIR } from './constants/dir'
+import { MongoClient } from 'mongodb'
 
 config()
 const app = express()
 app.use(express.json())
 const port = process.env.PORT || 4000
 initFolder()
-databaseService.connect().catch(console.dir)
+databaseService.connect().then(() => {
+  databaseService.indexUsers()
+})
 // localhost:3000/
 app.get('/', (req, res) => {
   res.send('hello world')
@@ -21,7 +25,8 @@ app.get('/', (req, res) => {
 app.use('/users', usersRouter)
 app.use('/medias', mediasRouter)
 //cách 1:
-// app.use('/static', express.static(UPLOAD_IMAGE_DIR))
+// app.use('/static/video', express.static(UPLOAD_VIDEO_DIR))
+//cách 2:
 app.use('/static', staticRouter)
 app.use(defaultErrorHandler)
 app.listen(port, () => {
