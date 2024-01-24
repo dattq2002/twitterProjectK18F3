@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { createTweetController } from '~/controllers/tweets.controllers'
-import { createTweetValidator } from '~/middlewares/tweets.middlewares'
-import { accessTokenValidator, verifiedUserValidator } from '~/middlewares/users.middlewares'
+import { createTweetController, getTweetController } from '~/controllers/tweets.controllers'
+import { audienceValidator, createTweetValidator, tweetIdValidator } from '~/middlewares/tweets.middlewares'
+import { accessTokenValidator, isUserLoggedInValidator, verifiedUserValidator } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 const tweetsRouter = Router()
 /*
@@ -23,6 +23,26 @@ tweetsRouter.post(
   wrapAsync(createTweetController)
 )
 
-//createTweetValidator và createTweetController ta chưa làm
+/*
+  des: get tweets detail
+  path: / nghĩa là localhost:4000/tweets thôi
+  headers: {Authorization?: Bearer <access_token>}
+  method: get
+  */
+
+tweetsRouter.get(
+  '/:tweet_id',
+  tweetIdValidator,
+  isUserLoggedInValidator(accessTokenValidator),
+  isUserLoggedInValidator(verifiedUserValidator),
+  audienceValidator,
+  wrapAsync(getTweetController)
+)
+//isUserLoggedInValidator là middleware kiểm tra xem người dùng đã đăng nhập chưa
+//nếu chưa thì chỉ xem đc các tweet everyone
+//nếu rồi thì middleware sẽ dùng lại accessTokenValidator, verifiedUserValidator từ đó biết
+//user này có được phép xem tweet này hay không
+
+//audienceValidator kiểm tra đối tượng có được phép xem tweet này hay không sau khi đã xác định ở bước trên
 
 export default tweetsRouter

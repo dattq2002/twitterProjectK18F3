@@ -637,3 +637,14 @@ export const changePasswordValidator = validate(
     ['body']
   )
 )
+//hàm nhận vào 1 middleware return void và trả ra 1 middleware
+export const isUserLoggedInValidator =
+  (middleware: (req: Request, res: Response, next: NextFunction) => void) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    //nếu có truyền lên authorization thì mới dùng middleware
+    if (req.headers.authorization) {
+      return middleware(req, res, next)
+    }
+    //không thì mình sẽ next
+    next()
+  }

@@ -74,7 +74,7 @@ class UsersService {
     const email_verify_token = await this.signEmailVerifyToken({
       user_id: user_id.toString(),
       verify: UserVerifyStatus.Unverified
-    })
+    })  
     await databaseService.users.insertOne(
       new User({
         ...payload,

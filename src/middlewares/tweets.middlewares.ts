@@ -2,12 +2,15 @@ import { Request, Response, NextFunction } from 'express'
 import { checkSchema } from 'express-validator'
 import { isEmpty } from 'lodash'
 import { ObjectId } from 'mongodb'
-import { MediaType, TweetAudience, TweetType } from '~/constants/enums'
+import { MediaType, TweetAudience, TweetType, UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
-import { TWEETS_MESSAGES } from '~/constants/messages'
+import { TWEETS_MESSAGES, USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
+import { TokenPayload } from '~/models/requests/User.request'
+import Tweet from '~/models/schemas/Tweet.schemas'
 import databaseService from '~/services/database.services'
 import { numberEnumToArray } from '~/utils/commons'
+import { wrapAsync } from '~/utils/handlers'
 import { validate } from '~/utils/validation'
 
 const tweetTypes = numberEnumToArray(TweetType) //kq có dạng [0, 1, 2, 3]
@@ -148,6 +151,7 @@ export const tweetIdValidator = validate(
                 message: TWEETS_MESSAGES.TWEET_NOT_FOUND //thêm trong messages.ts
               }) //thêm trong messages.ts
             }
+            ;(req as Request).tweet = tweet //lưu tweet vào req để dùng ở bước sau
             return true
           }
         }
@@ -156,3 +160,44 @@ export const tweetIdValidator = validate(
     ['params', 'body']
   )
 )
+//vì hàm này mình truy cập vào database nên sẽ dùng async await, nếu phát sinh lỗi phải dùng try catch
+//nếu không thích dùng trycatch có thể bọc cả hàm vào wrapAsync
+export const audienceValidator = wrapAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const tweet = req.tweet as Tweet
+  //nếu bài tweet này là TwitterCircle thì mới hiểm tra user có đc xem hay k, còn là everyone thì k cần
+  if (tweet.audience == TweetAudience.TwitterCircle) {
+    //kiểm tra người xem tweet này đã đăng nhập chưa
+    //nếu chưa đăng nhập thì sẽ không có req.decoded_authorization
+    if (!req.decoded_authorization) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.UNAUTHORIZED, //401
+        message: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED //thêm trong messages.ts
+      })
+    }
+    //lấy user_id của người xem tweet này
+    const { user_id } = req.decoded_authorization as TokenPayload
+    //kiểm tra xem người đăng tweet có bị banned không?
+    const authorUser = await databaseService.users.findOne({
+      _id: new ObjectId(tweet.user_id) //user_id này là của tweet, tức là của tác giả bài đăng
+    })
+    //nếu không có authorUser hoặc authorUser bị banned thì res 404
+    //thì ta sẽ báo rằng bài đăng này không tồn tại nữa và không cho xem
+    if (!authorUser || authorUser.verify == UserVerifyStatus.Banned) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.NOT_FOUND, //404
+        message: TWEETS_MESSAGES.TWEET_NOT_FOUND //thêm trong messages.ts
+      })
+    }
+    //kiểm tra xem user có nằm trong twitter_circle của authorUser hay không
+    const isInTwitterCircle = authorUser.twitter_circle.some((user_circle_id) => user_circle_id.equals(user_id)) //equals là method có sẵn của object
+    //nếu không nằm trong twitter_circle của authorUser và không phải tác giả
+    if (!isInTwitterCircle && !authorUser._id.equals(user_id)) {
+      //ném res 403
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.FORBIDDEN, //403
+        message: TWEETS_MESSAGES.TWEET_IS_NOT_PUBLIC //thêm trong messages.ts
+      })
+    }
+  }
+  next()
+})

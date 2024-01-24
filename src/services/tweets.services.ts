@@ -42,6 +42,10 @@ class TweetsService {
     // hashtagDocument là mảng các ovject kết quả của findOneAndUpdate từ việc tìm và thêm hashtag
     return hashtagDocument.map((item) => (item as WithId<Hashtag>)._id)
   }
+  async getTweet(tweet_id: string) {
+    const tweet = await databaseService.tweets.findOne({ _id: new ObjectId(tweet_id) })
+    return tweet
+  }
 }
 const tweetsService = new TweetsService()
 export default tweetsService
