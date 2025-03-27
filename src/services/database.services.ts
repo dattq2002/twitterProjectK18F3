@@ -8,8 +8,7 @@ import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import Tweet from '~/models/schemas/Tweet.schemas'
 import User from '~/models/schemas/User.schema'
 config()
-const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@tweetprojectk18.bdo4xww.mongodb.net/?retryWrites=true&w=majority`
-
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@shopcard.9c8qc.mongodb.net/?retryWrites=true&w=majority`
 class DatabaseService {
   private client: MongoClient
   private db: Db

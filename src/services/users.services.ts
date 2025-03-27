@@ -12,6 +12,8 @@ import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { Follower } from '~/models/schemas/Followers.schema'
 import axios from 'axios'
+import { sendEmailWithTemplate } from '~/utils/mailer'
+import { client } from '~/utils/redis'
 config()
 
 class UsersService {
@@ -74,8 +76,8 @@ class UsersService {
     const email_verify_token = await this.signEmailVerifyToken({
       user_id: user_id.toString(),
       verify: UserVerifyStatus.Unverified
-    })  
-    await databaseService.users.insertOne(
+    })
+    const insert_user = await databaseService.users.insertOne(
       new User({
         ...payload,
         _id: user_id,
@@ -85,7 +87,8 @@ class UsersService {
         password: hashPassword(payload.password)
       })
     )
-
+    //kiểm tra xem có tạo user thành công không
+    const newuser = await databaseService.users.findOne({ _id: user_id })
     //lay user_id từ user vừa tạo
     const [access_token, refesh_token] = await this.signAccessTokenAndRefreshToken({
       user_id: user_id.toString(),
@@ -103,7 +106,10 @@ class UsersService {
     )
     // giả lập gửi email verify token
     console.log(email_verify_token)
-
+    await sendEmailWithTemplate(payload.email, payload.name, email_verify_token, 'email')
+    await client.set('access_token', access_token)
+    await client.set('refresh_token', refesh_token)
+    await client.set('user', JSON.stringify(newuser))
     return { access_token, refesh_token }
   }
   async login({ user_id, verify }: { user_id: string; verify: UserVerifyStatus }) {
@@ -121,6 +127,10 @@ class UsersService {
         iat
       })
     )
+    //lưu vào redis
+    await client.set('access_token', access_token)
+    await client.set('refresh_token', refesh_token)
+
     return { access_token, refesh_token }
   }
 
@@ -159,6 +169,12 @@ class UsersService {
         iat
       })
     )
+    const user = await databaseService.users.findOne({
+      _id: new ObjectId(user_id)
+    })
+    await client.set('access_token', access_token)
+    await client.set('refresh_token', refesh_token)
+    await client.set('user', JSON.stringify(user))
     return { access_token, refesh_token }
   }
   async resendEmailVerify(user_id: string) {
@@ -205,6 +221,11 @@ class UsersService {
     //sau này ta sẽ dùng aws để làm chức năng gữi email, giờ ta k có
     //ta log ra để test
     console.log('forgot_password_token: ', forgot_password_token)
+    //gửi email cho người dùng
+    const user = await client.get('user')
+
+    const { email, name } = JSON.parse(user as string) as User
+    await sendEmailWithTemplate(email, name, forgot_password_token, 'password')
     return {
       message: USERS_MESSAGES.CHECK_EMAIL_TO_RESET_PASSWORD
     }

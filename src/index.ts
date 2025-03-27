@@ -9,15 +9,17 @@ import staticRouter from './routes/static.routes'
 import tweetsRouter from './routes/tweets.routes'
 import bookmarksRouter from './routes/bookmarks.routes'
 import likesRouter from './routes/likes.routes'
+import { runRedis } from '~/utils/redis'
 
 config()
 const app = express()
-app.use(express.json())
+
 const port = process.env.PORT || 4000
 initFolder()
 databaseService.connect().then(() => {
   databaseService.indexUsers()
 })
+runRedis()
 // localhost:3000/
 app.get('/', (req, res) => {
   res.send('hello world')
@@ -33,6 +35,7 @@ app.use('/tweets', tweetsRouter)
 app.use('/bookmarks', bookmarksRouter)
 app.use('/likes', likesRouter)
 app.use(defaultErrorHandler)
+
 app.listen(port, () => {
   console.log(`Project twitter này đang chạy trên port ${port}`)
 })
